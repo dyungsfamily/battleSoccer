@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Battle Soccer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    <div id="ui-overlay">
+      <div id="score-board">
+        <span id="score-red">0</span>
+        <span class="score-divider"> : </span>
+        <span id="score-blue">0</span>
+      </div>
+      <div id="item-display">아이템: 없음</div>
+      <div id="status-msg"></div>
+    </div>
+  </div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="renderer.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
