@@ -228,9 +228,9 @@ document.addEventListener('keydown', (e) => {
   if (k === 'a') keys.a = true;
   if (k === 's') keys.s = true;
   if (k === 'd') keys.d = true;
-  // frozen 상태에서 방향키 누르면 즉시 전송해서 서버 unfreeze 유도
-  if (gameFrozen && isMove) {
-    socket.emit('move', { w: keys.w, a: keys.a, s: keys.s, d: keys.d });
+  // frozen 상태에서 방향키 새로 누를 때만 ready 전송 (repeat 제외)
+  if (gameFrozen && isMove && !e.repeat) {
+    socket.emit('ready');
   }
   if (e.code === 'Space')                                { e.preventDefault(); socket.emit('kick'); }
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { e.preventDefault(); socket.emit('useItem'); }
@@ -282,10 +282,6 @@ function setupMobileControls() {
     const t = RADIUS * 0.3;
     keys.w = dy < -t; keys.s = dy > t;
     keys.a = dx < -t; keys.d = dx > t;
-    // frozen 상태에서 조이스틱 이동 → 즉시 전송
-    if (gameFrozen && (keys.w || keys.a || keys.s || keys.d)) {
-      socket.emit('move', { w: keys.w, a: keys.a, s: keys.s, d: keys.d });
-    }
   }
 
   function resetJoystick() {
@@ -293,7 +289,13 @@ function setupMobileControls() {
     keys.w = keys.s = keys.a = keys.d = false;
   }
 
-  base.addEventListener('touchstart', (e) => { e.preventDefault(); touching = true; updateJoystick(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
+  base.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    touching = true;
+    // frozen 상태에서 새로 터치하면 ready 전송
+    if (gameFrozen) socket.emit('ready');
+    updateJoystick(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
   base.addEventListener('touchmove',  (e) => { e.preventDefault(); if (touching) updateJoystick(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
   base.addEventListener('touchend',   (e) => { e.preventDefault(); touching = false; resetJoystick(); }, { passive: false });
 

@@ -223,13 +223,14 @@ class GameLogic {
   // ── 입력 처리 ───────────────────────────────────────────
   handleMove(socketId, keys) {
     const p = this.players[socketId];
-    if (!p) return;
+    if (!p || this.frozen) return;
     p.keys = keys;
-    // 방향키 입력 시 frozen 해제
-    if (this.frozen && (keys.w || keys.a || keys.s || keys.d)) {
-      this.frozen    = false;
-      this.resetting = false;
-    }
+  }
+
+  handleReady(socketId) {
+    if (!this.frozen) return;
+    this.frozen    = false;
+    this.resetting = false;
   }
 
   handleKick(socketId) {
@@ -360,6 +361,7 @@ class GameLogic {
 
   useItem(socketId)      { this.itemLogic.use(socketId); }
   getPlayer(socketId)    { return this.players[socketId]; }
+  isReady()              { return !this.frozen; }
 }
 
 module.exports = GameLogic;
