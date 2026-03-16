@@ -148,6 +148,13 @@ class GameLogic {
   // ── 골 처리 ─────────────────────────────────────────────
   _onGoal(scoringTeam) {
     this.resetting = true;
+    // 골 즉시 모든 물체 정지
+    this.frozen = true;
+    Body.setVelocity(this.ball, { x: 0, y: 0 });
+    Object.values(this.players).forEach(p => {
+      Body.setVelocity(p.body, { x: 0, y: 0 });
+      p.keys = { w: false, a: false, s: false, d: false };
+    });
     this.scores[scoringTeam]++;
     this._emit('goalScored', { team: scoringTeam });
     this._emit('scoreUpdate', this.scores);
