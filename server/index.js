@@ -4,25 +4,7 @@ process.on('unhandledRejection', (e) => console.error('[unhandledRejection]:', e
 const express = require('express');
 const http = require('http');
 
-// ── IP 기반 국가코드 조회 ──────────────────────────────────
-function getCountryCode(rawIp) {
-  return new Promise((resolve) => {
-    if (!rawIp) return resolve(null);
-    const ip = rawIp.replace(/^::ffff:/, '');
-    if (ip === '::1' || ip === '127.0.0.1' || ip.startsWith('192.168.') || ip.startsWith('10.') || ip.startsWith('172.')) {
-      return resolve(null);
-    }
-    const timer = setTimeout(() => resolve(null), 3000);
-    http.get(`http://ip-api.com/json/${ip}?fields=countryCode`, (res) => {
-      let data = '';
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => {
-        clearTimeout(timer);
-        try { resolve(JSON.parse(data).countryCode || null); } catch { resolve(null); }
-      });
-    }).on('error', () => { clearTimeout(timer); resolve(null); });
-  });
-}
+
 const { Server } = require('socket.io');
 const path = require('path');
 const GameLogic = require('./gameLogic');
@@ -100,12 +82,9 @@ io.on('connection', (socket) => {
   });
 
   // 방 생성
-  socket.on('createRoom', async ({ nickname }) => {
+  socket.on('createRoom', ({ nickname, countryCode = null }) => {
     try {
       leaveRoom(socket);
-      const rawIp = socket.handshake.headers['x-forwarded-for']?.split(',')[0].trim() || socket.handshake.address;
-      const countryCode = await getCountryCode(rawIp);
-
       const code = generateRoomCode();
       const game = new GameLogic(io, code);
       rooms.set(code, { code, game, players: new Map() });
@@ -116,7 +95,7 @@ io.on('connection', (socket) => {
       room.players.set(socket.id, { nickname, team: info.team, countryCode });
 
       socket.emit('roomCreated', { code });
-      socket.emit('init', { team: info.team, number: info.number, nickname, code, countryCode });
+      socket.emit('init', { team: info.team, number: info.number, nickname, code });
       socket.emit('scoreUpdate', game.scores);
       broadcastRoomList();
       console.log(`[방 생성] ${code} - ${nickname} (${countryCode || '?'})`);
@@ -126,15 +105,12 @@ io.on('connection', (socket) => {
   });
 
   // 방 입장
-  socket.on('joinRoom', async ({ code, nickname }) => {
+  socket.on('joinRoom', ({ code, nickname, countryCode = null }) => {
     try {
       const upperCode = code.toUpperCase();
       const room = rooms.get(upperCode);
       if (!room) { socket.emit('joinError', '방을 찾을 수 없습니다.'); return; }
       if (room.players.size >= 4) { socket.emit('joinError', '방이 가득 찼습니다. (최대 4명)'); return; }
-
-      const rawIp = socket.handshake.headers['x-forwarded-for']?.split(',')[0].trim() || socket.handshake.address;
-      const countryCode = await getCountryCode(rawIp);
 
       leaveRoom(socket);
       socket.join(upperCode);
@@ -142,7 +118,7 @@ io.on('connection', (socket) => {
       room.players.set(socket.id, { nickname, team: info.team, countryCode });
 
       socket.emit('roomJoined', { code: upperCode });
-      socket.emit('init', { team: info.team, number: info.number, nickname, code: upperCode, countryCode });
+      socket.emit('init', { team: info.team, number: info.number, nickname, code: upperCode });
       socket.emit('scoreUpdate', room.game.scores);
       io.to(upperCode).emit('playerJoined', { nickname, team: info.team, countryCode });
       broadcastRoomList();

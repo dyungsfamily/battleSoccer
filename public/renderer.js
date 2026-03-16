@@ -65,18 +65,18 @@ window.renderer = (() => {
     // 번개 이펙트
     if (state.lightnings) drawLightnings(state.lightnings);
 
-    // 카운트다운 오버레이
-    if (state.frozen && state.countdown > 0) {
+    // frozen 오버레이 (방향키 대기)
+    if (state.frozen) {
       ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillStyle = 'rgba(0,0,0,0.45)';
       ctx.fillRect(0, 0, GAME_W, GAME_H);
-      ctx.font = 'bold 130px Arial';
+      ctx.font = 'bold 26px Arial';
       ctx.fillStyle = '#ffd700';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.shadowBlur = 30;
+      ctx.shadowBlur = 12;
       ctx.shadowColor = '#ff8800';
-      ctx.fillText(String(state.countdown), GAME_W / 2, GAME_H / 2);
+      ctx.fillText('⚽  방향키를 눌러 시작!', GAME_W / 2, GAME_H / 2);
       ctx.restore();
     }
   }
@@ -179,7 +179,7 @@ window.renderer = (() => {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       const nick = p.nickname || String(p.number || '?');
-      const shortNick = nick.length > 5 ? nick.slice(0, 5) + '.' : nick;
+      const shortNick = nick.length > 8 ? nick.slice(0, 8) + '.' : nick;
       ctx.fillText(shortNick, p.x, p.y - p.r - 10);
 
       // 아이템 보유 표시

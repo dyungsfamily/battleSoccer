@@ -7,6 +7,13 @@ const socket = io('https://battle-soccer-production.up.railway.app', {
 // ── 상태 ─────────────────────────────────────────────────
 let myNickname = '';
 let myRoomCode = '';
+let myCountryCode = null;
+
+// 국가코드 클라이언트 감지
+fetch('https://ipapi.co/country_code/')
+  .then(r => r.text())
+  .then(code => { if (code && code.length === 2) myCountryCode = code.trim(); })
+  .catch(() => {});
 
 function countryCodeToFlag(code) {
   if (!code || code.length !== 2) return '';
@@ -58,7 +65,7 @@ document.getElementById('btn-refresh-rooms').addEventListener('click', () => {
 
 document.getElementById('btn-create-room').addEventListener('click', () => {
   setLobbyError('');
-  socket.emit('createRoom', { nickname: myNickname });
+  socket.emit('createRoom', { nickname: myNickname, countryCode: myCountryCode });
 });
 
 document.getElementById('btn-join-code').addEventListener('click', joinByCode);
@@ -73,7 +80,7 @@ function joinByCode() {
   const code = document.getElementById('join-code-input').value.trim().toUpperCase();
   if (code.length !== 4) { setLobbyError('방 코드는 4자리입니다.'); return; }
   setLobbyError('');
-  socket.emit('joinRoom', { code, nickname: myNickname });
+  socket.emit('joinRoom', { code, nickname: myNickname, countryCode: myCountryCode });
 }
 
 function setLobbyError(msg) {
@@ -112,7 +119,7 @@ socket.on('roomList', (rooms) => {
 
 window.joinRoom = function(code) {
   setLobbyError('');
-  socket.emit('joinRoom', { code, nickname: myNickname });
+  socket.emit('joinRoom', { code, nickname: myNickname, countryCode: myCountryCode });
 };
 
 // ── 방 생성/입장 응답 ─────────────────────────────────────
@@ -206,15 +213,6 @@ socket.on('itemUpdate', (item) => {
   document.getElementById('item-bar').textContent = '아이템: ' + (names[item] || '없음');
 });
 
-socket.on('countdown', (count) => {
-  const msg = document.getElementById('status-msg');
-  if (count === 0) {
-    msg.textContent = '⚽ GO!';
-    setTimeout(() => { if (msg.textContent === '⚽ GO!') msg.textContent = ''; }, 700);
-  } else {
-    msg.textContent = '';
-  }
-});
 
 // ── 키보드 입력 ──────────────────────────────────────────
 const keys = { w: false, a: false, s: false, d: false };

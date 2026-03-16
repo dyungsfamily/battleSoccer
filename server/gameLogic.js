@@ -169,22 +169,8 @@ class GameLogic {
       Body.setPosition(p.body, pos); Body.setVelocity(p.body, { x: 0, y: 0 });
     });
 
-    // 카운트다운 후 시작
-    this.frozen   = true;
-    this.countdown = 3;
-    this._emit('countdown', 3);
-
-    const tick = setInterval(() => {
-      this.countdown--;
-      if (this.countdown > 0) {
-        this._emit('countdown', this.countdown);
-      } else {
-        this._emit('countdown', 0); // GO!
-        this.frozen    = false;
-        this.resetting = false;
-        clearInterval(tick);
-      }
-    }, 1000);
+    // 방향키 입력 전까지 정지 상태 유지
+    this.frozen = true;
   }
 
   // ── 플레이어 추가/제거 ──────────────────────────────────
@@ -230,6 +216,11 @@ class GameLogic {
     const p = this.players[socketId];
     if (!p) return;
     p.keys = keys;
+    // 방향키 입력 시 frozen 해제
+    if (this.frozen && (keys.w || keys.a || keys.s || keys.d)) {
+      this.frozen    = false;
+      this.resetting = false;
+    }
   }
 
   handleKick(socketId) {
