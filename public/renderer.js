@@ -65,20 +65,6 @@ window.renderer = (() => {
     // 번개 이펙트
     if (state.lightnings) drawLightnings(state.lightnings);
 
-    // frozen 오버레이 (방향키 대기)
-    if (state.frozen) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(0,0,0,0.45)';
-      ctx.fillRect(0, 0, GAME_W, GAME_H);
-      ctx.font = 'bold 26px Arial';
-      ctx.fillStyle = '#ffd700';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.shadowBlur = 12;
-      ctx.shadowColor = '#ff8800';
-      ctx.fillText('⚽  방향키를 눌러 시작!', GAME_W / 2, GAME_H / 2);
-      ctx.restore();
-    }
   }
 
   function drawField() {

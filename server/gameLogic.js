@@ -176,10 +176,9 @@ class GameLogic {
       Body.setPosition(p.body, pos); Body.setVelocity(p.body, { x: 0, y: 0 });
     });
 
-    // 방향키 입력 전까지 정지 상태 유지
-    this.frozen = true;
-    // 서버 키 상태 초기화 (이전에 누르고 있던 키 무효화)
-    Object.values(this.players).forEach(p => { p.keys = { w: false, a: false, s: false, d: false }; });
+    // 리셋 완료 → 즉시 재개
+    this.frozen    = false;
+    this.resetting = false;
   }
 
   // ── 플레이어 추가/제거 ──────────────────────────────────
@@ -225,12 +224,6 @@ class GameLogic {
     const p = this.players[socketId];
     if (!p || this.frozen) return;
     p.keys = keys;
-  }
-
-  handleReady(socketId) {
-    if (!this.frozen) return;
-    this.frozen    = false;
-    this.resetting = false;
   }
 
   handleKick(socketId) {
@@ -362,7 +355,6 @@ class GameLogic {
 
   useItem(socketId)      { this.itemLogic.use(socketId); }
   getPlayer(socketId)    { return this.players[socketId]; }
-  isReady()              { return !this.frozen; }
 }
 
 module.exports = GameLogic;

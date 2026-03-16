@@ -141,14 +141,6 @@ io.on('connection', (socket) => {
     } catch (e) {}
   });
 
-  // 시작 준비 (frozen 해제)
-  socket.on('ready', () => {
-    try {
-      const found = getPlayerRoom(socket.id);
-      if (found) found.room.game.handleReady(socket.id);
-    } catch (e) {}
-  });
-
   // 킥
   socket.on('kick', () => {
     try {
