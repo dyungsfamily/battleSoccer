@@ -125,7 +125,7 @@ function enterGame(code) {
   document.getElementById('room-code-display').textContent = code;
   document.getElementById('score-red').textContent  = '0';
   document.getElementById('score-blue').textContent = '0';
-  document.getElementById('item-display').textContent = '아이템: 없음';
+  document.getElementById('item-bar').textContent = '아이템: 없음';
   document.getElementById('status-msg').textContent = '';
   showScreen('game');
   if (window.renderer) window.renderer.resize();
@@ -195,7 +195,7 @@ socket.on('goalScored', (data) => {
 
 socket.on('itemUpdate', (item) => {
   const names = { missile: '🚀 미사일', lightning: '⚡ 번개', tornado: '🌀 돌풍' };
-  document.getElementById('item-display').textContent = '아이템: ' + (names[item] || '없음');
+  document.getElementById('item-bar').textContent = '아이템: ' + (names[item] || '없음');
 });
 
 // ── 키보드 입력 ──────────────────────────────────────────

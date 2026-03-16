@@ -180,7 +180,8 @@ input[type="text"]::placeholder { color: #555; }
   width: 100%;
   max-width: 800px;
   padding: 0 4px;
-  gap: 8px;
+  gap: 6px;
+  flex-wrap: nowrap; /* 항상 한 줄 */
 }
 
 .room-info {
@@ -234,15 +235,16 @@ input[type="text"]::placeholder { color: #555; }
   width: 100%;
   pointer-events: none;
 }
-#item-display {
-  position: absolute;
-  bottom: 10px; left: 10px;
-  font-size: 14px;
+#item-bar {
+  font-size: 13px;
   color: #ffd700;
-  background: rgba(0,0,0,0.6);
-  padding: 6px 12px;
+  background: rgba(0,0,0,0.5);
+  padding: 5px 14px;
   border-radius: 8px;
-  border: 1px solid rgba(255,215,0,0.4);
+  border: 1px solid rgba(255,215,0,0.3);
+  text-align: center;
+  width: 100%;
+  max-width: 800px;
 }
 #status-msg {
   position: absolute;
@@ -313,9 +315,10 @@ input[type="text"]::placeholder { color: #555; }
   #btn-confirm-nick { font-size: 15px; padding: 11px; }
   .join-row { flex-direction: column; }
   #btn-join-code { width: 100%; }
-  #game-header { flex-wrap: wrap; justify-content: center; gap: 6px; }
-  #score-board { font-size: 20px; padding: 3px 14px; }
-  .room-code { font-size: 14px; letter-spacing: 2px; }
+  #score-board { font-size: 18px; padding: 3px 10px; }
+  .room-code { font-size: 13px; letter-spacing: 2px; }
+  .room-label { display: none; }
+  .game-btns .btn { padding: 5px 8px; font-size: 11px; }
   .room-list-title { font-size: 12px; }
   #room-list { max-height: 180px; }
 }
