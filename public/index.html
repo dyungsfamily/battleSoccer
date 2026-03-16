@@ -7,20 +7,76 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="game-wrapper">
-    <div id="score-board">
-      <span id="score-red">0</span>
-      <span class="score-divider"> : </span>
-      <span id="score-blue">0</span>
+
+  <!-- ── 화면 1: 닉네임 설정 ── -->
+  <div id="screen-nickname" class="screen active">
+    <div class="lobby-card">
+      <h1 class="logo">⚽ Battle Soccer</h1>
+      <p class="subtitle">닉네임을 입력하고 시작하세요</p>
+      <div class="input-row">
+        <input id="nickname-input" type="text" maxlength="10" placeholder="닉네임 입력..." />
+        <button id="btn-random-nick" class="btn btn-secondary">🎲</button>
+      </div>
+      <button id="btn-confirm-nick" class="btn btn-primary">입장하기</button>
     </div>
-    <div id="game-container">
-      <canvas id="gameCanvas"></canvas>
-      <div id="ui-overlay">
-        <div id="item-display">아이템: 없음</div>
-        <div id="status-msg"></div>
+  </div>
+
+  <!-- ── 화면 2: 로비 ── -->
+  <div id="screen-lobby" class="screen">
+    <div class="lobby-card wide">
+      <div class="lobby-header">
+        <h2>⚽ 로비 <span id="lobby-nickname" class="nick-badge"></span></h2>
+        <button id="btn-refresh-rooms" class="btn btn-sm">🔄 새로고침</button>
+      </div>
+
+      <div class="lobby-actions">
+        <button id="btn-create-room" class="btn btn-primary">방 만들기</button>
+        <div class="join-row">
+          <input id="join-code-input" type="text" maxlength="4" placeholder="방 코드 입력 (4자)" />
+          <button id="btn-join-code" class="btn btn-secondary">입장</button>
+        </div>
+      </div>
+
+      <div class="room-list-wrap">
+        <p class="room-list-title">열린 방 목록</p>
+        <div id="room-list">
+          <p class="empty-msg">열린 방이 없습니다.</p>
+        </div>
+      </div>
+
+      <div id="lobby-error" class="error-msg"></div>
+    </div>
+  </div>
+
+  <!-- ── 화면 3: 게임 ── -->
+  <div id="screen-game" class="screen">
+    <div id="game-wrapper">
+      <div id="game-header">
+        <div class="room-info">
+          <span class="room-label">방 코드</span>
+          <span id="room-code-display" class="room-code" title="클릭하여 복사"></span>
+        </div>
+        <div id="score-board">
+          <span id="score-red">0</span>
+          <span class="score-divider"> : </span>
+          <span id="score-blue">0</span>
+        </div>
+        <div class="game-btns">
+          <button id="btn-other-room" class="btn btn-sm">다른 방</button>
+          <button id="btn-leave-room" class="btn btn-sm btn-danger">나가기</button>
+        </div>
+      </div>
+
+      <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="ui-overlay">
+          <div id="item-display">아이템: 없음</div>
+          <div id="status-msg"></div>
+        </div>
       </div>
     </div>
   </div>
+
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script src="renderer.js"></script>
   <script src="client.js"></script>

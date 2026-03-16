@@ -9,8 +9,9 @@ window.renderer = (() => {
 
   // 캔버스 크기를 화면에 맞게 조정 (모바일 최적화)
   function resize() {
+    const headerH = document.getElementById('game-header') ? document.getElementById('game-header').offsetHeight + 14 : 60;
     const maxW = window.innerWidth - 4;
-    const maxH = window.innerHeight - 4;
+    const maxH = window.innerHeight - headerH - 4;
     const scale = Math.min(maxW / GAME_W, maxH / GAME_H, 1);
     canvas.style.width  = (GAME_W * scale) + 'px';
     canvas.style.height = (GAME_H * scale) + 'px';
@@ -141,12 +142,14 @@ window.renderer = (() => {
       ctx.fill();
       ctx.stroke();
 
-      // 이름/번호 표시
+      // 닉네임 표시 (원 위)
       ctx.fillStyle = 'white';
-      ctx.font = `bold ${Math.floor(p.r * 0.8)}px Arial`;
+      ctx.font = `bold 11px Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(p.number || '?', p.x, p.y);
+      const nick = p.nickname || String(p.number || '?');
+      const shortNick = nick.length > 5 ? nick.slice(0, 5) + '.' : nick;
+      ctx.fillText(shortNick, p.x, p.y - p.r - 10);
 
       // 아이템 보유 표시
       if (p.item) {

@@ -1,5 +1,3 @@
-// gameLogic.js - Matter.js 기반 서버 물리 엔진
-
 const Matter = require('matter-js');
 const ItemLogic = require('./itemLogic');
 
@@ -13,11 +11,10 @@ const PLAYER_R = 20;
 const BALL_R = 14;
 const ITEM_BOX_R = 14;
 
-// 충돌 카테고리 (플레이어가 골대 안으로 못 들어가게)
-const CAT_WALL          = 0x0001;
-const CAT_PLAYER        = 0x0002;
-const CAT_BALL          = 0x0004;
-const CAT_GOAL_BLOCKER  = 0x0008;
+const CAT_WALL         = 0x0001;
+const CAT_PLAYER       = 0x0002;
+const CAT_BALL         = 0x0004;
+const CAT_GOAL_BLOCKER = 0x0008;
 
 const SPAWN_POSITIONS = {
   red:  [{ x: 200, y: GAME_H / 2 }, { x: 280, y: GAME_H / 2 - 80 }, { x: 280, y: GAME_H / 2 + 80 }],
@@ -25,24 +22,27 @@ const SPAWN_POSITIONS = {
 };
 
 class GameLogic {
-  constructor(io) {
+  constructor(io, roomCode) {
     this.io = io;
+    this.roomCode = roomCode;
     this.engine = Engine.create({ gravity: { x: 0, y: 0 } });
     this.world = this.engine.world;
 
-    this.players   = {};
-    this.ball      = null;
-    this.walls     = [];
+    this.players    = {};
+    this.ball       = null;
+    this.walls      = [];
     this.goalSensors = [];
-    this.itemBoxes = [];
-    this.missiles  = [];
+    this.itemBoxes  = [];
+    this.missiles   = [];
     this.explosions = [];
     this.lightnings = [];
-    this.tornados  = [];
+    this.tornados   = [];
 
-    this.scores    = { red: 0, blue: 0 };
-    this.resetting = false;
+    this.scores     = { red: 0, blue: 0 };
+    this.resetting  = false;
     this.playerCount = 0;
+    this._loopInterval    = null;
+    this._spawnerInterval = null;
 
     this.itemLogic = new ItemLogic(this);
 
@@ -51,6 +51,11 @@ class GameLogic {
     this._setupCollisions();
     this._startLoop();
     this._startItemSpawner();
+  }
+
+  // ── 방에만 브로드캐스트 ─────────────────────────────────
+  _emit(event, data) {
+    this.io.to(this.roomCode).emit(event, data);
   }
 
   // ── 맵 생성 ─────────────────────────────────────────────
@@ -65,16 +70,16 @@ class GameLogic {
     };
 
     const wallDefs = [
-      { x: W / 2,           y: WALL_T / 2,                  hw: W / 2,      hh: WALL_T / 2,          label: 'wall' },
-      { x: W / 2,           y: H - WALL_T / 2,              hw: W / 2,      hh: WALL_T / 2,          label: 'wall' },
-      { x: WALL_T / 2,      y: goalY1 / 2,                  hw: WALL_T / 2, hh: goalY1 / 2,          label: 'wall' },
-      { x: WALL_T / 2,      y: goalY2 + (H - goalY2) / 2,  hw: WALL_T / 2, hh: (H - goalY2) / 2,   label: 'wall' },
-      { x: W - WALL_T / 2, y: goalY1 / 2,                  hw: WALL_T / 2, hh: goalY1 / 2,          label: 'wall' },
-      { x: W - WALL_T / 2, y: goalY2 + (H - goalY2) / 2,  hw: WALL_T / 2, hh: (H - goalY2) / 2,   label: 'wall' },
+      { x: W / 2,           y: WALL_T / 2,                  hw: W / 2,      hh: WALL_T / 2,        label: 'wall' },
+      { x: W / 2,           y: H - WALL_T / 2,              hw: W / 2,      hh: WALL_T / 2,        label: 'wall' },
+      { x: WALL_T / 2,      y: goalY1 / 2,                  hw: WALL_T / 2, hh: goalY1 / 2,        label: 'wall' },
+      { x: WALL_T / 2,      y: goalY2 + (H - goalY2) / 2,  hw: WALL_T / 2, hh: (H - goalY2) / 2,  label: 'wall' },
+      { x: W - WALL_T / 2,  y: goalY1 / 2,                  hw: WALL_T / 2, hh: goalY1 / 2,        label: 'wall' },
+      { x: W - WALL_T / 2,  y: goalY2 + (H - goalY2) / 2,  hw: WALL_T / 2, hh: (H - goalY2) / 2,  label: 'wall' },
       { x: WALL_T / 2,      y: goalY1,                      hw: WALL_T / 2, hh: 5, label: 'goalPost', team: 'red'  },
       { x: WALL_T / 2,      y: goalY2,                      hw: WALL_T / 2, hh: 5, label: 'goalPost', team: 'red'  },
-      { x: W - WALL_T / 2, y: goalY1,                      hw: WALL_T / 2, hh: 5, label: 'goalPost', team: 'blue' },
-      { x: W - WALL_T / 2, y: goalY2,                      hw: WALL_T / 2, hh: 5, label: 'goalPost', team: 'blue' },
+      { x: W - WALL_T / 2,  y: goalY1,                      hw: WALL_T / 2, hh: 5, label: 'goalPost', team: 'blue' },
+      { x: W - WALL_T / 2,  y: goalY2,                      hw: WALL_T / 2, hh: 5, label: 'goalPost', team: 'blue' },
     ];
 
     wallDefs.forEach(def => {
@@ -86,16 +91,15 @@ class GameLogic {
       this.walls.push({ body, def });
     });
 
-    // 골 입구 플레이어 차단벽 (공은 통과, 플레이어는 통과 불가)
     const blockerOpts = {
       isStatic: true, isSensor: false, label: 'goalBlocker',
       collisionFilter: { category: CAT_GOAL_BLOCKER, mask: CAT_PLAYER }
     };
-    const leftBlocker  = Bodies.rectangle(WALL_T, H / 2, WALL_T, GOAL_H, blockerOpts);
-    const rightBlocker = Bodies.rectangle(W - WALL_T, H / 2, WALL_T, GOAL_H, blockerOpts);
-    World.add(this.world, [leftBlocker, rightBlocker]);
+    World.add(this.world, [
+      Bodies.rectangle(WALL_T, H / 2, WALL_T, GOAL_H, blockerOpts),
+      Bodies.rectangle(W - WALL_T, H / 2, WALL_T, GOAL_H, blockerOpts),
+    ]);
 
-    // 골 감지 센서
     const redGoalSensor = Bodies.rectangle(0, H / 2, WALL_T * 2, GOAL_H, {
       isStatic: true, isSensor: true, label: 'goalSensor'
     });
@@ -104,12 +108,10 @@ class GameLogic {
       isStatic: true, isSensor: true, label: 'goalSensor'
     });
     blueGoalSensor.gameData = { team: 'red' };
-
     World.add(this.world, [redGoalSensor, blueGoalSensor]);
     this.goalSensors = [redGoalSensor, blueGoalSensor];
   }
 
-  // ── 공 생성 ─────────────────────────────────────────────
   _setupBall() {
     this.ball = Bodies.circle(GAME_W / 2, GAME_H / 2, BALL_R, {
       label: 'ball',
@@ -119,7 +121,6 @@ class GameLogic {
     World.add(this.world, this.ball);
   }
 
-  // ── 충돌 이벤트 ─────────────────────────────────────────
   _setupCollisions() {
     Events.on(this.engine, 'collisionStart', (event) => {
       event.pairs.forEach(({ bodyA, bodyB }) => {
@@ -131,16 +132,14 @@ class GameLogic {
 
   _handleCollision(a, b) {
     try {
-      // 골 감지
       if (a.label === 'goalSensor' && b.label === 'ball' && !this.resetting) {
         this._onGoal(a.gameData.team);
       }
-      // 아이템 박스 획득 (null 체크 포함)
       if (a.label === 'itemBox' && b.label === 'player' && b.gameData && b.gameData.socketId) {
         this._collectItem(a, b.gameData.socketId);
       }
     } catch (e) {
-      console.error('충돌 처리 오류:', e.message);
+      console.error('[collision]:', e.message);
     }
   }
 
@@ -148,8 +147,8 @@ class GameLogic {
   _onGoal(scoringTeam) {
     this.resetting = true;
     this.scores[scoringTeam]++;
-    this.io.emit('goalScored', { team: scoringTeam });
-    this.io.emit('scoreUpdate', this.scores);
+    this._emit('goalScored', { team: scoringTeam });
+    this._emit('scoreUpdate', this.scores);
     setTimeout(() => this._resetPositions(), 2000);
   }
 
@@ -157,13 +156,13 @@ class GameLogic {
     Body.setPosition(this.ball, { x: GAME_W / 2, y: GAME_H / 2 });
     Body.setVelocity(this.ball, { x: 0, y: 0 });
 
-    const redPlayers  = Object.values(this.players).filter(p => p.team === 'red');
-    const bluePlayers = Object.values(this.players).filter(p => p.team === 'blue');
-    redPlayers.forEach((p, i) => {
+    const red  = Object.values(this.players).filter(p => p.team === 'red');
+    const blue = Object.values(this.players).filter(p => p.team === 'blue');
+    red.forEach((p, i) => {
       const pos = SPAWN_POSITIONS.red[i % SPAWN_POSITIONS.red.length];
       Body.setPosition(p.body, pos); Body.setVelocity(p.body, { x: 0, y: 0 });
     });
-    bluePlayers.forEach((p, i) => {
+    blue.forEach((p, i) => {
       const pos = SPAWN_POSITIONS.blue[i % SPAWN_POSITIONS.blue.length];
       Body.setPosition(p.body, pos); Body.setVelocity(p.body, { x: 0, y: 0 });
     });
@@ -171,9 +170,14 @@ class GameLogic {
   }
 
   // ── 플레이어 추가/제거 ──────────────────────────────────
-  addPlayer(socketId) {
+  addPlayer(socketId, nickname = '익명') {
     this.playerCount++;
-    const team = this.playerCount % 2 === 1 ? 'red' : 'blue';
+
+    // 팀 배분: 레드 2명 이하면 레드, 아니면 블루
+    const redCount  = Object.values(this.players).filter(p => p.team === 'red').length;
+    const blueCount = Object.values(this.players).filter(p => p.team === 'blue').length;
+    const team = redCount <= blueCount ? 'red' : 'blue';
+
     const teamPlayers = Object.values(this.players).filter(p => p.team === team);
     const spawnPos = SPAWN_POSITIONS[team][teamPlayers.length % SPAWN_POSITIONS[team].length];
 
@@ -188,6 +192,7 @@ class GameLogic {
     this.players[socketId] = {
       id: socketId, body, team,
       number: this.playerCount,
+      nickname,
       item: null, stunned: false, stunTimer: null,
       keys: { w: false, a: false, s: false, d: false },
     };
@@ -219,16 +224,13 @@ class GameLogic {
     const dy = bPos.y - pPos.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
     if (dist < PLAYER_R + BALL_R + 15) {
-      Body.applyForce(this.ball, bPos, {
-        x: (dx / dist) * 0.03,
-        y: (dy / dist) * 0.03,
-      });
+      Body.applyForce(this.ball, bPos, { x: (dx / dist) * 0.03, y: (dy / dist) * 0.03 });
     }
   }
 
-  // ── 아이템 박스 스폰 ────────────────────────────────────
+  // ── 아이템 박스 ─────────────────────────────────────────
   _startItemSpawner() {
-    setInterval(() => {
+    this._spawnerInterval = setInterval(() => {
       if (Object.keys(this.players).length === 0) return;
       this._spawnItemBox();
     }, 10000);
@@ -248,9 +250,7 @@ class GameLogic {
 
   _collectItem(boxBody, socketId) {
     const p = this.players[socketId];
-    if (!p || p.item) return;
-    // 중복 처리 방지
-    if (!this.itemBoxes.includes(boxBody)) return;
+    if (!p || p.item || !this.itemBoxes.includes(boxBody)) return;
 
     const items = ['missile', 'lightning', 'tornado'];
     p.item = items[Math.floor(Math.random() * items.length)];
@@ -262,7 +262,7 @@ class GameLogic {
   // ── 게임 루프 ───────────────────────────────────────────
   _startLoop() {
     const TICK = 1000 / 60;
-    setInterval(() => {
+    this._loopInterval = setInterval(() => {
       try {
         this._applyPlayerForces();
         this._updateMissiles();
@@ -272,15 +272,20 @@ class GameLogic {
         Engine.update(this.engine, TICK);
         this._broadcast();
       } catch (e) {
-        console.error('[gameLoop] 오류 (무시하고 계속):', e.message);
+        console.error(`[gameLoop ${this.roomCode}]:`, e.message);
       }
     }, TICK);
+  }
+
+  stop() {
+    if (this._loopInterval)    clearInterval(this._loopInterval);
+    if (this._spawnerInterval) clearInterval(this._spawnerInterval);
   }
 
   _applyPlayerForces() {
     Object.values(this.players).forEach(p => {
       const { keys, body, stunned } = p;
-      const forceMag = stunned ? 0.0045 : 0.009; // 이동속도, 스턴 시 절반
+      const forceMag = stunned ? 0.0045 : 0.009;
       let fx = 0, fy = 0;
       if (keys.w) fy -= 1;
       if (keys.s) fy += 1;
@@ -295,7 +300,6 @@ class GameLogic {
 
   _updateMissiles()   { this.itemLogic.updateMissiles(); }
   _updateTornados()   { this.itemLogic.updateTornados(); }
-
   _updateExplosions() {
     this.explosions = this.explosions.filter(e => { e.progress += 0.05; return e.progress < 1; });
   }
@@ -309,10 +313,10 @@ class GameLogic {
       players: Object.values(this.players).map(p => ({
         id: p.id, x: p.body.position.x, y: p.body.position.y,
         r: PLAYER_R, team: p.team, number: p.number,
-        item: p.item, stunned: p.stunned,
+        nickname: p.nickname, item: p.item, stunned: p.stunned,
       })),
-      ball: { x: this.ball.position.x, y: this.ball.position.y, r: BALL_R },
-      walls: this.walls.map(({ body, def }) => ({
+      ball:       { x: this.ball.position.x, y: this.ball.position.y, r: BALL_R },
+      walls:      this.walls.map(({ body, def }) => ({
         x: body.position.x, y: body.position.y,
         hw: def.hw, hh: def.hh,
         isGoal: body.gameData.isGoal, team: body.gameData.team,
@@ -323,13 +327,11 @@ class GameLogic {
       lightnings: this.lightnings.map(l => ({ fromX: l.fromX, fromY: l.fromY, toX: l.toX, toY: l.toY })),
       tornados:   this.tornados.map(t => ({ x: t.body.position.x, y: t.body.position.y, radius: t.radius })),
     };
-    this.io.emit('gameState', state);
+    this._emit('gameState', state);
   }
 
-  // ── 아이템 사용 ──────────────────────────────────────────
-  useItem(socketId) { this.itemLogic.use(socketId); }
-
-  getPlayer(socketId) { return this.players[socketId]; }
+  useItem(socketId)      { this.itemLogic.use(socketId); }
+  getPlayer(socketId)    { return this.players[socketId]; }
 }
 
 module.exports = GameLogic;
