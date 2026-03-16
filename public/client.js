@@ -219,7 +219,6 @@ socket.on('itemUpdate', (item) => {
 
 // ── 키보드 입력 ──────────────────────────────────────────
 const keys = { w: false, a: false, s: false, d: false };
-let prevKeys = { w: false, a: false, s: false, d: false };
 
 document.addEventListener('keydown', (e) => {
   if (!myRoomCode) return;
@@ -245,15 +244,11 @@ document.addEventListener('keyup', (e) => {
   if (k === 'd') keys.d = false;
 });
 
-// 키 상태가 바뀌거나 눌려있는 동안 전송 (frozen 중엔 전송 안 함)
+// 키가 눌려있는 동안 전송 (frozen 중엔 전송 안 함)
 setInterval(() => {
   if (!myRoomCode || gameFrozen) return;
-  const anyKey  = keys.w || keys.a || keys.s || keys.d;
-  const changed = keys.w !== prevKeys.w || keys.a !== prevKeys.a ||
-                  keys.s !== prevKeys.s || keys.d !== prevKeys.d;
-  if (anyKey || changed) {
+  if (keys.w || keys.a || keys.s || keys.d) {
     socket.emit('move', { w: keys.w, a: keys.a, s: keys.s, d: keys.d });
-    prevKeys = { ...keys };
   }
 }, 1000 / 60);
 
@@ -296,8 +291,6 @@ function setupMobileControls() {
   function resetJoystick() {
     knob.style.transform = 'translate(0px, 0px)';
     keys.w = keys.s = keys.a = keys.d = false;
-    // 조이스틱 뗄 때 정지 신호 전송
-    if (myRoomCode && !gameFrozen) socket.emit('move', { w: false, a: false, s: false, d: false });
   }
 
   base.addEventListener('touchstart', (e) => { e.preventDefault(); touching = true; updateJoystick(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
