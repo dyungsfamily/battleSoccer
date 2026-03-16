@@ -1,3 +1,11 @@
+// 프로세스 레벨 예외 핸들러 - 서버가 죽지 않게 방어
+process.on('uncaughtException', (e) => {
+  console.error('[uncaughtException] 서버 유지:', e.message);
+});
+process.on('unhandledRejection', (e) => {
+  console.error('[unhandledRejection] 서버 유지:', e);
+});
+
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -30,27 +38,24 @@ io.on('connection', (socket) => {
   socket.emit('init', { team: info.team, number: info.number });
   socket.emit('scoreUpdate', game.scores);
 
-  // 이동 입력
   socket.on('move', (keys) => {
-    game.handleMove(socket.id, keys);
+    try { game.handleMove(socket.id, keys); } catch (e) {}
   });
 
-  // 킥
   socket.on('kick', () => {
-    game.handleKick(socket.id);
+    try { game.handleKick(socket.id); } catch (e) {}
   });
 
-  // 아이템 사용 (Step 5에서 itemLogic 연결)
   socket.on('useItem', () => {
-    const p = game.getPlayer(socket.id);
-    if (p && p.item) {
-      game.useItem(socket.id);
-    }
+    try {
+      const p = game.getPlayer(socket.id);
+      if (p && p.item) game.useItem(socket.id);
+    } catch (e) {}
   });
 
   socket.on('disconnect', () => {
     console.log(`[해제] 플레이어 연결 해제: ${socket.id}`);
-    game.removePlayer(socket.id);
+    try { game.removePlayer(socket.id); } catch (e) {}
   });
 });
 

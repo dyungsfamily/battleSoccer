@@ -263,20 +263,24 @@ class GameLogic {
   _startLoop() {
     const TICK = 1000 / 60;
     setInterval(() => {
-      this._applyPlayerForces();
-      this._updateMissiles();
-      this._updateTornados();
-      this._updateExplosions();
-      this._updateLightnings();
-      Engine.update(this.engine, TICK);
-      this._broadcast();
+      try {
+        this._applyPlayerForces();
+        this._updateMissiles();
+        this._updateTornados();
+        this._updateExplosions();
+        this._updateLightnings();
+        Engine.update(this.engine, TICK);
+        this._broadcast();
+      } catch (e) {
+        console.error('[gameLoop] 오류 (무시하고 계속):', e.message);
+      }
     }, TICK);
   }
 
   _applyPlayerForces() {
     Object.values(this.players).forEach(p => {
       const { keys, body, stunned } = p;
-      const forceMag = stunned ? 0.003 : 0.006; // 이동속도 향상, 스턴 시 절반
+      const forceMag = stunned ? 0.0045 : 0.009; // 이동속도, 스턴 시 절반
       let fx = 0, fy = 0;
       if (keys.w) fy -= 1;
       if (keys.s) fy += 1;
