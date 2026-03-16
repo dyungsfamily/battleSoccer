@@ -1,6 +1,8 @@
 // client.js - 소켓 통신 및 입력 처리
 
-const socket = io();
+const socket = io('https://battle-soccer-production.up.railway.app', {
+  transports: ['websocket', 'polling']
+});
 
 // 연결 이벤트
 socket.on('connect', () => {
