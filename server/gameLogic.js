@@ -234,7 +234,7 @@ class GameLogic {
 
   handleKick(socketId) {
     const p = this.players[socketId];
-    if (!p || p.stunned) return;
+    if (!p || p.stunned || this.frozen) return;
 
     const pPos = p.body.position;
     const bPos = this.ball.position;
@@ -250,6 +250,7 @@ class GameLogic {
   _startItemSpawner() {
     this._spawnerInterval = setInterval(() => {
       if (Object.keys(this.players).length === 0) return;
+      if (this.itemBoxes.length >= 5) return; // 최대 5개 제한
       this._spawnItemBox();
     }, 10000);
   }
