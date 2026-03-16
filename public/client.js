@@ -24,9 +24,7 @@ socket.on('disconnect', () => {
 
 // 서버로부터 게임 상태 수신 → renderer에 전달
 socket.on('gameState', (state) => {
-  if (window.renderer) {
-    window.renderer.render(state, socket.id);
-  }
+  if (window.renderer) window.renderer.render(state, socket.id);
 });
 
 // 점수 업데이트
@@ -44,11 +42,11 @@ socket.on('goalScored', (data) => {
 
 // 아이템 업데이트
 socket.on('itemUpdate', (item) => {
-  const itemNames = { missile: '🚀 미사일', lightning: '⚡ 번개', tornado: '🌀 돌풍', null: '없음' };
+  const itemNames = { missile: '🚀 미사일', lightning: '⚡ 번개', tornado: '🌀 돌풍' };
   document.getElementById('item-display').textContent = '아이템: ' + (itemNames[item] || '없음');
 });
 
-// ── 키보드 입력 처리 ──────────────────────────────────────
+// ── 키보드 입력 처리 ─────────────────────────────────────
 const keys = { w: false, a: false, s: false, d: false };
 
 document.addEventListener('keydown', (e) => {
@@ -57,15 +55,8 @@ document.addEventListener('keydown', (e) => {
   if (key === 'a') keys.a = true;
   if (key === 's') keys.s = true;
   if (key === 'd') keys.d = true;
-
-  if (e.code === 'Space') {
-    e.preventDefault();
-    socket.emit('kick');
-  }
-  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
-    e.preventDefault();
-    socket.emit('useItem');
-  }
+  if (e.code === 'Space')                              { e.preventDefault(); socket.emit('kick'); }
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { e.preventDefault(); socket.emit('useItem'); }
 });
 
 document.addEventListener('keyup', (e) => {
@@ -83,16 +74,15 @@ setInterval(() => {
   }
 }, 1000 / 60);
 
-// ── 모바일 가상 패드 ─────────────────────────────────────
+// ── 원형 조이스틱 ────────────────────────────────────────
 function setupMobileControls() {
   const container = document.createElement('div');
   container.id = 'mobile-controls';
   container.innerHTML = `
-    <div id="dpad">
-      <div class="dpad-btn" id="btn-up">▲</div>
-      <div class="dpad-btn" id="btn-left">◀</div>
-      <div class="dpad-btn" id="btn-right">▶</div>
-      <div class="dpad-btn" id="btn-down">▼</div>
+    <div id="joystick-zone">
+      <div id="joystick-base">
+        <div id="joystick-knob"></div>
+      </div>
     </div>
     <div id="action-btns">
       <div class="action-btn" id="btn-kick">KICK</div>
@@ -101,32 +91,68 @@ function setupMobileControls() {
   `;
   document.body.appendChild(container);
 
-  const btnMap = {
-    'btn-up': 'w', 'btn-down': 's', 'btn-left': 'a', 'btn-right': 'd'
-  };
+  const base  = document.getElementById('joystick-base');
+  const knob  = document.getElementById('joystick-knob');
+  const RADIUS = 45; // 조이스틱 최대 반경
 
-  Object.entries(btnMap).forEach(([id, key]) => {
-    const el = document.getElementById(id);
-    el.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; el.classList.add('active'); }, { passive: false });
-    el.addEventListener('touchend',   (e) => { e.preventDefault(); keys[key] = false; el.classList.remove('active'); }, { passive: false });
-  });
+  let touching = false;
+  let baseX = 0, baseY = 0;
+
+  function getBaseCenter() {
+    const rect = base.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  }
+
+  function updateJoystick(cx, cy) {
+    const center = getBaseCenter();
+    let dx = cx - center.x;
+    let dy = cy - center.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > RADIUS) { dx = dx / dist * RADIUS; dy = dy / dist * RADIUS; }
+
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+
+    const threshold = RADIUS * 0.3;
+    keys.w = dy < -threshold;
+    keys.s = dy >  threshold;
+    keys.a = dx < -threshold;
+    keys.d = dx >  threshold;
+  }
+
+  function resetJoystick() {
+    knob.style.transform = 'translate(0px, 0px)';
+    keys.w = keys.s = keys.a = keys.d = false;
+  }
+
+  base.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    touching = true;
+    updateJoystick(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+
+  base.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (touching) updateJoystick(e.touches[0].clientX, e.touches[0].clientY);
+  }, { passive: false });
+
+  base.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    touching = false;
+    resetJoystick();
+  }, { passive: false });
 
   document.getElementById('btn-kick').addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    socket.emit('kick');
-    e.target.classList.add('active');
+    e.preventDefault(); socket.emit('kick'); e.currentTarget.classList.add('active');
   }, { passive: false });
   document.getElementById('btn-kick').addEventListener('touchend', (e) => {
-    e.target.classList.remove('active');
+    e.currentTarget.classList.remove('active');
   });
 
   document.getElementById('btn-item').addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    socket.emit('useItem');
-    e.target.classList.add('active');
+    e.preventDefault(); socket.emit('useItem'); e.currentTarget.classList.add('active');
   }, { passive: false });
   document.getElementById('btn-item').addEventListener('touchend', (e) => {
-    e.target.classList.remove('active');
+    e.currentTarget.classList.remove('active');
   });
 }
 

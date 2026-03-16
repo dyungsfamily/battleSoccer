@@ -62,7 +62,8 @@ class ItemLogic {
     this.game.missiles.push({
       body: missileBody,
       dx, dy,
-      ttl: 120, // 2초 (60fps)
+      angle: Math.atan2(dy, dx),
+      ttl: 120,
       exploded: false,
     });
   }

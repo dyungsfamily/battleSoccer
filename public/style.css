@@ -85,51 +85,54 @@ body {
   width: 100%;
   display: none;
   justify-content: space-between;
-  padding: 10px;
+  align-items: flex-end;
+  padding: 16px;
   pointer-events: none;
 }
 
-#dpad {
-  position: relative;
-  width: 130px;
-  height: 130px;
+/* 원형 조이스틱 */
+#joystick-zone {
   pointer-events: all;
+  touch-action: none;
 }
 
-.dpad-btn {
-  position: absolute;
-  width: 42px;
-  height: 42px;
-  background: rgba(255,255,255,0.2);
-  border: 2px solid rgba(255,255,255,0.4);
-  border-radius: 8px;
+#joystick-base {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  border: 2px solid rgba(255,255,255,0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
-  color: white;
+  position: relative;
+  touch-action: none;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  touch-action: none;
 }
-.dpad-btn.active { background: rgba(255,255,255,0.5); }
 
-#btn-up    { top: 0;   left: 44px; }
-#btn-down  { top: 88px; left: 44px; }
-#btn-left  { top: 44px; left: 0; }
-#btn-right { top: 44px; left: 88px; }
+#joystick-knob {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9), rgba(200,200,200,0.5));
+  border: 2px solid rgba(255,255,255,0.6);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  transition: transform 0.05s;
+  pointer-events: none;
+}
 
 #action-btns {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   align-items: flex-end;
   pointer-events: all;
 }
 
 .action-btn {
-  width: 60px;
-  height: 60px;
+  width: 66px;
+  height: 66px;
   border-radius: 50%;
   border: 3px solid rgba(255,255,255,0.5);
   display: flex;
@@ -142,9 +145,9 @@ body {
   -webkit-tap-highlight-color: transparent;
   touch-action: none;
 }
-#btn-kick  { background: rgba(255,100,100,0.6); }
-#btn-item  { background: rgba(100,180,255,0.6); }
-.action-btn.active { filter: brightness(1.5); }
+#btn-kick  { background: rgba(255,80,80,0.7); }
+#btn-item  { background: rgba(80,160,255,0.7); }
+.action-btn.active { filter: brightness(1.6); transform: scale(0.95); }
 
 @media (max-width: 900px) {
   #mobile-controls { display: flex; }
