@@ -171,6 +171,8 @@ class GameLogic {
 
     // 방향키 입력 전까지 정지 상태 유지
     this.frozen = true;
+    // 서버 키 상태 초기화 (이전에 누르고 있던 키 무효화)
+    Object.values(this.players).forEach(p => { p.keys = { w: false, a: false, s: false, d: false }; });
   }
 
   // ── 플레이어 추가/제거 ──────────────────────────────────

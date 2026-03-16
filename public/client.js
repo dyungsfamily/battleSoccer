@@ -191,7 +191,10 @@ socket.on('disconnect', () => {
   document.getElementById('status-msg').textContent = '서버와 연결이 끊겼습니다. 새로고침하세요.';
 });
 
+let gameFrozen = false;
+
 socket.on('gameState', (state) => {
+  gameFrozen = !!state.frozen;
   if (window.renderer && myRoomCode) {
     window.renderer.render(state, socket.id);
   }
@@ -216,14 +219,20 @@ socket.on('itemUpdate', (item) => {
 
 // ── 키보드 입력 ──────────────────────────────────────────
 const keys = { w: false, a: false, s: false, d: false };
+let prevKeys = { w: false, a: false, s: false, d: false };
 
 document.addEventListener('keydown', (e) => {
   if (!myRoomCode) return;
   const k = e.key.toLowerCase();
+  const isMove = k === 'w' || k === 'a' || k === 's' || k === 'd';
   if (k === 'w') keys.w = true;
   if (k === 'a') keys.a = true;
   if (k === 's') keys.s = true;
   if (k === 'd') keys.d = true;
+  // frozen 상태에서 방향키 누르면 즉시 전송해서 서버 unfreeze 유도
+  if (gameFrozen && isMove) {
+    socket.emit('move', { w: keys.w, a: keys.a, s: keys.s, d: keys.d });
+  }
   if (e.code === 'Space')                                { e.preventDefault(); socket.emit('kick'); }
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { e.preventDefault(); socket.emit('useItem'); }
 });
@@ -236,10 +245,15 @@ document.addEventListener('keyup', (e) => {
   if (k === 'd') keys.d = false;
 });
 
+// 키 상태가 바뀌거나 눌려있는 동안 전송 (frozen 중엔 전송 안 함)
 setInterval(() => {
-  if (!myRoomCode) return;
-  if (keys.w || keys.a || keys.s || keys.d) {
+  if (!myRoomCode || gameFrozen) return;
+  const anyKey  = keys.w || keys.a || keys.s || keys.d;
+  const changed = keys.w !== prevKeys.w || keys.a !== prevKeys.a ||
+                  keys.s !== prevKeys.s || keys.d !== prevKeys.d;
+  if (anyKey || changed) {
     socket.emit('move', { w: keys.w, a: keys.a, s: keys.s, d: keys.d });
+    prevKeys = { ...keys };
   }
 }, 1000 / 60);
 
@@ -273,11 +287,17 @@ function setupMobileControls() {
     const t = RADIUS * 0.3;
     keys.w = dy < -t; keys.s = dy > t;
     keys.a = dx < -t; keys.d = dx > t;
+    // frozen 상태에서 조이스틱 이동 → 즉시 전송
+    if (gameFrozen && (keys.w || keys.a || keys.s || keys.d)) {
+      socket.emit('move', { w: keys.w, a: keys.a, s: keys.s, d: keys.d });
+    }
   }
 
   function resetJoystick() {
     knob.style.transform = 'translate(0px, 0px)';
     keys.w = keys.s = keys.a = keys.d = false;
+    // 조이스틱 뗄 때 정지 신호 전송
+    if (myRoomCode && !gameFrozen) socket.emit('move', { w: false, a: false, s: false, d: false });
   }
 
   base.addEventListener('touchstart', (e) => { e.preventDefault(); touching = true; updateJoystick(e.touches[0].clientX, e.touches[0].clientY); }, { passive: false });
