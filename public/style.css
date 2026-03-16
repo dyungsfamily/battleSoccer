@@ -2,33 +2,44 @@
 
 body {
   background: #1a1a2e;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
   font-family: 'Arial', sans-serif;
   color: white;
 }
 
 /* ── 화면 전환 ── */
-.screen { display: none; width: 100%; justify-content: center; align-items: center; }
+.screen {
+  display: none;
+  width: 100%;
+  min-height: 100vh;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px 12px;
+}
 .screen.active { display: flex; }
+
+/* 게임 화면은 패딩 최소화 */
+#screen-game {
+  align-items: center;
+  padding: 8px 4px;
+  overflow: hidden;
+}
 
 /* ── 로비 공통 카드 ── */
 .lobby-card {
   background: #16213e;
   border: 1px solid #0f3460;
   border-radius: 16px;
-  padding: 36px 32px;
-  width: 360px;
-  max-width: 95vw;
+  padding: 28px 20px;
+  width: 100%;
+  max-width: 380px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.5);
 }
-.lobby-card.wide { width: 480px; }
+.lobby-card.wide { max-width: 480px; }
 
 .logo {
   font-size: 28px;
@@ -106,12 +117,15 @@ input[type="text"]::placeholder { color: #555; }
 .join-row {
   display: flex;
   gap: 8px;
+  align-items: stretch;
 }
 #join-code-input {
   text-transform: uppercase;
   letter-spacing: 4px;
-  font-size: 18px;
+  font-size: 16px;
   text-align: center;
+  min-width: 0;
+  flex: 1;
 }
 
 .room-list-wrap { display: flex; flex-direction: column; gap: 8px; }
@@ -291,8 +305,17 @@ input[type="text"]::placeholder { color: #555; }
 
 @media (max-width: 900px) {
   #mobile-controls { display: flex; }
-  .lobby-card { padding: 24px 18px; }
-  #game-header { flex-wrap: wrap; justify-content: center; }
-  #score-board { font-size: 22px; }
-  .room-code { font-size: 15px; }
+}
+
+@media (max-width: 480px) {
+  .lobby-card { padding: 20px 14px; gap: 12px; }
+  .logo { font-size: 22px; }
+  #btn-confirm-nick { font-size: 15px; padding: 11px; }
+  .join-row { flex-direction: column; }
+  #btn-join-code { width: 100%; }
+  #game-header { flex-wrap: wrap; justify-content: center; gap: 6px; }
+  #score-board { font-size: 20px; padding: 3px 14px; }
+  .room-code { font-size: 14px; letter-spacing: 2px; }
+  .room-list-title { font-size: 12px; }
+  #room-list { max-height: 180px; }
 }
