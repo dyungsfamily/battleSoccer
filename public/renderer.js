@@ -64,6 +64,21 @@ window.renderer = (() => {
 
     // 번개 이펙트
     if (state.lightnings) drawLightnings(state.lightnings);
+
+    // 카운트다운 오버레이
+    if (state.frozen && state.countdown > 0) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(0, 0, GAME_W, GAME_H);
+      ctx.font = 'bold 130px Arial';
+      ctx.fillStyle = '#ffd700';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowBlur = 30;
+      ctx.shadowColor = '#ff8800';
+      ctx.fillText(String(state.countdown), GAME_W / 2, GAME_H / 2);
+      ctx.restore();
+    }
   }
 
   function drawField() {
@@ -118,6 +133,13 @@ window.renderer = (() => {
     ctx.restore();
   }
 
+  function countryFlag(code) {
+    if (!code || code.length !== 2) return '';
+    try {
+      return String.fromCodePoint(...[...code.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+    } catch { return ''; }
+  }
+
   function drawPlayers(players, myId) {
     players.forEach(p => {
       ctx.save();
@@ -142,6 +164,15 @@ window.renderer = (() => {
       ctx.fill();
       ctx.stroke();
 
+      // 국기 표시 (원 위 상단)
+      const flag = countryFlag(p.countryCode);
+      if (flag) {
+        ctx.font = '13px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(flag, p.x, p.y - p.r - 22);
+      }
+
       // 닉네임 표시 (원 위)
       ctx.fillStyle = 'white';
       ctx.font = `bold 11px Arial`;
@@ -155,7 +186,7 @@ window.renderer = (() => {
       if (p.item) {
         const icons = { missile: '🚀', lightning: '⚡', tornado: '🌀' };
         ctx.font = '12px Arial';
-        ctx.fillText(icons[p.item] || '', p.x, p.y - p.r - 8);
+        ctx.fillText(icons[p.item] || '', p.x + p.r + 4, p.y);
       }
 
       ctx.restore();

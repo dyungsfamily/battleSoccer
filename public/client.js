@@ -8,6 +8,13 @@ const socket = io('https://battle-soccer-production.up.railway.app', {
 let myNickname = '';
 let myRoomCode = '';
 
+function countryCodeToFlag(code) {
+  if (!code || code.length !== 2) return '';
+  try {
+    return String.fromCodePoint(...[...code.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+  } catch { return ''; }
+}
+
 // ── 화면 전환 ────────────────────────────────────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -82,9 +89,10 @@ socket.on('roomList', (rooms) => {
   }
   list.innerHTML = rooms.map(r => {
     const full = r.playerCount >= r.maxPlayers;
-    const members = r.members.map(m =>
-      `<span style="color:${m.team === 'red' ? '#ff6b6b' : '#74b9ff'}">${m.nickname}</span>`
-    ).join(', ');
+    const members = r.members.map(m => {
+      const flag = m.countryCode ? countryCodeToFlag(m.countryCode) : '';
+      return `<span style="color:${m.team === 'red' ? '#ff6b6b' : '#74b9ff'}">${flag ? flag + ' ' : ''}${m.nickname}</span>`;
+    }).join(', ');
     return `
       <div class="room-item">
         <div class="room-item-info">
@@ -196,6 +204,16 @@ socket.on('goalScored', (data) => {
 socket.on('itemUpdate', (item) => {
   const names = { missile: '🚀 미사일', lightning: '⚡ 번개', tornado: '🌀 돌풍' };
   document.getElementById('item-bar').textContent = '아이템: ' + (names[item] || '없음');
+});
+
+socket.on('countdown', (count) => {
+  const msg = document.getElementById('status-msg');
+  if (count === 0) {
+    msg.textContent = '⚽ GO!';
+    setTimeout(() => { if (msg.textContent === '⚽ GO!') msg.textContent = ''; }, 700);
+  } else {
+    msg.textContent = '';
+  }
 });
 
 // ── 키보드 입력 ──────────────────────────────────────────

@@ -40,6 +40,8 @@ class GameLogic {
 
     this.scores     = { red: 0, blue: 0 };
     this.resetting  = false;
+    this.frozen     = false;
+    this.countdown  = 0;
     this.playerCount = 0;
     this._loopInterval    = null;
     this._spawnerInterval = null;
@@ -166,11 +168,27 @@ class GameLogic {
       const pos = SPAWN_POSITIONS.blue[i % SPAWN_POSITIONS.blue.length];
       Body.setPosition(p.body, pos); Body.setVelocity(p.body, { x: 0, y: 0 });
     });
-    this.resetting = false;
+
+    // 카운트다운 후 시작
+    this.frozen   = true;
+    this.countdown = 3;
+    this._emit('countdown', 3);
+
+    const tick = setInterval(() => {
+      this.countdown--;
+      if (this.countdown > 0) {
+        this._emit('countdown', this.countdown);
+      } else {
+        this._emit('countdown', 0); // GO!
+        this.frozen    = false;
+        this.resetting = false;
+        clearInterval(tick);
+      }
+    }, 1000);
   }
 
   // ── 플레이어 추가/제거 ──────────────────────────────────
-  addPlayer(socketId, nickname = '익명') {
+  addPlayer(socketId, nickname = '익명', countryCode = null) {
     this.playerCount++;
 
     // 팀 배분: 레드 2명 이하면 레드, 아니면 블루
@@ -192,7 +210,7 @@ class GameLogic {
     this.players[socketId] = {
       id: socketId, body, team,
       number: this.playerCount,
-      nickname,
+      nickname, countryCode,
       item: null, stunned: false, stunTimer: null,
       keys: { w: false, a: false, s: false, d: false },
     };
@@ -283,6 +301,12 @@ class GameLogic {
   }
 
   _applyPlayerForces() {
+    if (this.frozen) {
+      // 위치 고정: 속도 모두 0으로 유지
+      Body.setVelocity(this.ball, { x: 0, y: 0 });
+      Object.values(this.players).forEach(p => Body.setVelocity(p.body, { x: 0, y: 0 }));
+      return;
+    }
     Object.values(this.players).forEach(p => {
       const { keys, body, stunned } = p;
       const forceMag = stunned ? 0.0045 : 0.009;
@@ -310,10 +334,13 @@ class GameLogic {
   // ── 브로드캐스트 ────────────────────────────────────────
   _broadcast() {
     const state = {
+      frozen: this.frozen,
+      countdown: this.countdown,
       players: Object.values(this.players).map(p => ({
         id: p.id, x: p.body.position.x, y: p.body.position.y,
         r: PLAYER_R, team: p.team, number: p.number,
-        nickname: p.nickname, item: p.item, stunned: p.stunned,
+        nickname: p.nickname, countryCode: p.countryCode,
+        item: p.item, stunned: p.stunned,
       })),
       ball:       { x: this.ball.position.x, y: this.ball.position.y, r: BALL_R },
       walls:      this.walls.map(({ body, def }) => ({

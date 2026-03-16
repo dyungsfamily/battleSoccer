@@ -165,6 +165,49 @@ input[type="text"]::placeholder { color: #555; }
   min-height: 18px;
 }
 
+/* ── 조작 안내 ── */
+.controls-guide {
+  background: rgba(15,52,96,0.4);
+  border: 1px solid #1a4080;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.controls-title {
+  font-size: 12px;
+  color: #888;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+.controls-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ctrl-key {
+  background: #0d1b3e;
+  border: 1px solid #2a4a80;
+  border-bottom: 3px solid #1a3060;
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #74b9ff;
+  white-space: nowrap;
+}
+.ctrl-desc {
+  font-size: 12px;
+  color: #aaa;
+  margin-right: 6px;
+}
+.controls-mobile-hint {
+  font-size: 11px;
+  color: #666;
+}
+
 /* ── 게임 화면 ── */
 #game-wrapper {
   display: flex;
