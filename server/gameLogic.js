@@ -257,6 +257,7 @@ class GameLogic {
   }
 
   _spawnItemBox() {
+    if (this.itemBoxes.length >= 5) return; // 이중 안전장치
     const margin = 100;
     const x = margin + Math.random() * (GAME_W - margin * 2);
     const y = margin + Math.random() * (GAME_H - margin * 2);
