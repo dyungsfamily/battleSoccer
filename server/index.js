@@ -7,7 +7,13 @@ const GameLogic = require('./gameLogic');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: '*' }
+  cors: {
+    origin: [
+      'https://battle-soccer.dyungsfamily.workers.dev',
+      'http://localhost:3000'
+    ],
+    methods: ['GET', 'POST']
+  }
 });
 
 const PORT = process.env.PORT || 3000;
