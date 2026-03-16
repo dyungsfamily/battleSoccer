@@ -14,6 +14,13 @@ body {
   font-family: 'Arial', sans-serif;
 }
 
+#game-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 #game-container {
   position: relative;
   display: inline-block;
@@ -35,17 +42,14 @@ body {
 }
 
 #score-board {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
   font-size: 28px;
   font-weight: bold;
   color: white;
   text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
   background: rgba(0,0,0,0.5);
-  padding: 4px 20px;
+  padding: 6px 28px;
   border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 #score-red { color: #ff6b6b; }

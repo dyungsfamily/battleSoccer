@@ -7,16 +7,18 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="game-container">
-    <canvas id="gameCanvas"></canvas>
-    <div id="ui-overlay">
-      <div id="score-board">
-        <span id="score-red">0</span>
-        <span class="score-divider"> : </span>
-        <span id="score-blue">0</span>
+  <div id="game-wrapper">
+    <div id="score-board">
+      <span id="score-red">0</span>
+      <span class="score-divider"> : </span>
+      <span id="score-blue">0</span>
+    </div>
+    <div id="game-container">
+      <canvas id="gameCanvas"></canvas>
+      <div id="ui-overlay">
+        <div id="item-display">아이템: 없음</div>
+        <div id="status-msg"></div>
       </div>
-      <div id="item-display">아이템: 없음</div>
-      <div id="status-msg"></div>
     </div>
   </div>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
